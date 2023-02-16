@@ -5,7 +5,8 @@
 
 The goal of this project is to read from the LSM6DS3 sensor,
 and apply a real time FIR filter on the received data using 
-a Xilinx Spartan 7 FPGA on [Spartan Edge Accelerator](https://wiki.seeedstudio.com/Spartan-Edge-Accelerator-Board/#spartan-edge-accelerator-board-esp32-boot) board with and utilizing the onboard ESP32 microcontroller to send the data over Wi-Fi or bluetooth.
+a Xilinx Spartan 7 FPGA on [Spartan Edge Accelerator](https://wiki.seeedstudio.com/Spartan-Edge-Accelerator-Board/) board
+and utilizing the onboard ESP32 microcontroller to send the data over Wi-Fi or bluetooth.
 
 
 For more info LSM6DS3, please refer to the [datasheet](https://octopart.com/datasheet/lsm6ds3tr-stmicroelectronics-53586202).
