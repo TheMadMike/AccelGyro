@@ -20,12 +20,12 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 
-
 #ifndef BOARD_MAX_SDMMC_FREQ
 #define BOARD_MAX_SDMMC_FREQ SDMMC_FREQ_HIGHSPEED
 #endif
 
-static void xfpgaBootInitGPIO(void);
+static void xfpgaInitGPIOForConfig(void);
+static void xfpgaSDCardBootInitGPIO(void);
 
 static gpio_config_t outputConfig, inputConfig;
 static char* taskName;
@@ -36,7 +36,7 @@ void xfpgaBootFromSDCard(void) {
     taskName = pcTaskGetName(NULL); 
 
     /* initialize proper gpio pins */
-    xfpgaBootInitGPIO();
+    xfpgaSDCardBootInitGPIO();
 
     ESP_LOGI(taskName, "Loading the bitstream...\n");
     sdmmc_slot_config_t slotConfig = SDMMC_SLOT_CONFIG_DEFAULT();
@@ -69,7 +69,7 @@ void xfpgaBootFromSDCard(void) {
 
     ESP_LOGI(taskName, "Filesystem mounted\n");
 
-    unsigned char buffer[1024];
+    uint8_t buffer[1024];
     size_t len;
     unsigned byte;
 
@@ -119,8 +119,6 @@ void xfpgaBootFromSDCard(void) {
 
     gpio_set_level(XFPGA_CCLK_PIN, 0);
 
-    
-
     fclose(file);
     
     if(gpio_get_level(XFPGA_DONE_PIN) == 0) {
@@ -133,10 +131,26 @@ void xfpgaBootFromSDCard(void) {
     ESP_LOGI(taskName, "Filesystem unmounted\n");
 }
 
+void xfpgaSDCardBootInitGPIO(void) {
+    xfpgaInitGPIOForConfig();
+    
+    // ESP GPIO2        (pin 22) <---> SD CARD D0
+    // ESP GPIO4        (pin 24) <---> SD CARD D1
+    // ESP GPIO12/MTDI  (pin 18) <---> SD CARD D2
+    // ESP GPIO13/MTCK  (pin 20) <---> SD CARD D3
+    // ESP GPIO15/MTDO  (pin 21) <---> SD CARD CMD
 
-void xfpgaBootInitGPIO(void) {
+    /* pull up the SD card pins */
+    gpio_pullup_en(GPIO_NUM_2);
+    gpio_pullup_en(GPIO_NUM_4);
+    gpio_pullup_en(GPIO_NUM_12);
+    gpio_pullup_en(GPIO_NUM_13);
+    gpio_pullup_en(GPIO_NUM_15);
+}
+
+void xfpgaInitGPIOForConfig(void) {
     ESP_LOGI(taskName, "Initializing GPIO for the FPGA boot...\n");
-
+    
     /* set input pins */
     inputConfig.pin_bit_mask = (1ULL << XFPGA_INTB_PIN) 
                              | (1ULL << XFPGA_DONE_PIN);
@@ -153,21 +167,6 @@ void xfpgaBootInitGPIO(void) {
     gpio_config(&inputConfig);
     gpio_config(&outputConfig);
 
-    
-    // ESP GPIO2        (pin 22) <---> SD CARD D0
-    // ESP GPIO4        (pin 24) <---> SD CARD D1
-    // ESP GPIO12/MTDI  (pin 18) <---> SD CARD D2
-    // ESP GPIO13/MTCK  (pin 20) <---> SD CARD D3
-    // ESP GPIO15/MTDO  (pin 21) <---> SD CARD CMD
-
-    /* pull up the SD card pins */
-    gpio_pullup_en(GPIO_NUM_2);
-    gpio_pullup_en(GPIO_NUM_4);
-    gpio_pullup_en(GPIO_NUM_12);
-    gpio_pullup_en(GPIO_NUM_13);
-    gpio_pullup_en(GPIO_NUM_15);
-
-
     /* set the initial logic levels on specific pins */
     gpio_set_level(XFPGA_PROGRAM_PIN, 0);
     gpio_set_level(XFPGA_CCLK_PIN, 0);
@@ -178,4 +177,6 @@ void xfpgaBootInitGPIO(void) {
     while(gpio_get_level(XFPGA_INTB_PIN) == 0) {
         vTaskDelay(1);
     }
+
+    ESP_LOGI(taskName, "FPGA reset done\n");
 }

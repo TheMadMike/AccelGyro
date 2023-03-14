@@ -12,7 +12,7 @@
 
 /**
  * @brief Loads a bistream from an SD card 
- * from the card slot on the board ()
+ * from the card slot on the board
  */
 void xfpgaBootFromSDCard(void);
 
